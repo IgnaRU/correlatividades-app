@@ -1,7 +1,17 @@
 import React, { useState, useEffect } from 'react';
 
 import React, { useState, useEffect } from 'react';
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import './index.css'; // Importa tu archivo CSS principal
+import App from './App';
+import reportWebVitals from './reportWebVitals';
 
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
 const careerCourses = [
  
   { id: 'am1', name: 'Análisis Matemático I', year: 1, prerequisites: [], status: 'pending' },
