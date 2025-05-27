@@ -54,7 +54,7 @@ function App() {
   const [courses, setCourses] = useState(careerCourses);
   const [enabledCourses, setEnabledCourses] = useState({});
 
- const isCourseEnabled = (courseId) => {
+  const isCourseEnabled = (courseId) => {
     const course = courses.find(c => c.id === courseId);
     if (!course) return false;
 
@@ -76,3 +76,32 @@ function App() {
 
     return allPrerequisitesMet;
   };
+
+  return (
+    <div className="App">
+      <h1>Plan de Estudios</h1>
+      {/* Aquí iría la lógica para renderizar la lista de cursos */}
+      {courses.map(course => (
+        <div key={course.id}>
+          <h2>{course.name} ({course.year}º año)</h2>
+          <p>Estado: {course.status}</p>
+          {course.prerequisites.length > 0 && (
+            <div>
+              <p>Prerrequisitos:</p>
+              <ul>
+                {course.prerequisites.map(prerequisite => (
+                  <li key={prerequisite.id}>
+                    {courses.find(c => c.id === prerequisite.id)?.name} ({prerequisite.requirement})
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          <button onClick={() => console.log(`Marcar ${course.name} como completada`)}>
+            Marcar como Completada
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
