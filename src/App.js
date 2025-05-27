@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react';
-
-import React, { useState, useEffect } from 'react';
-import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css'; // Importa tu archivo CSS principal
-import App from './App';
 import reportWebVitals from './reportWebVitals';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
