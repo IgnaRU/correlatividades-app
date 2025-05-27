@@ -1,3 +1,4 @@
+// src/App.js
 import React, { useState, useEffect } from 'react';
 import './index.css'; // Importa tu archivo CSS principal
 
@@ -61,17 +62,4 @@ function App() {
       return true;
     }
 
-    const allPrerequisitesMet = course.prerequisites.every(prerequisite => {
-      const prereqCourse = courses.find(c => c.id === prerequisite.id);
-      if (!prereqCourse) return false;
-
-      if (prerequisite.requirement === 'Cursada') {
-        return prereqCourse.status === 'cursando' || prereqCourse.status === 'regular' || prereqCourse.status === 'aprobada';
-      } else if (prerequisite.requirement === 'Aprobada') {
-        return prereqCourse.status === 'regular' || prereqCourse.status === 'aprobada';
-      }
-      return false;
-    });
-
-    return allPrerequisitesMet;
-  };
+    const allPrerequisitesMet = course.prerequisites.
