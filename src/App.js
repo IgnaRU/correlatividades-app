@@ -58,4 +58,4 @@ function App() {
     if (!course) return false;
 
     if (course.prerequisites.length === 0) {
-      return
+      return;
