@@ -77,31 +77,130 @@ function App() {
     return allPrerequisitesMet;
   };
 
+  useEffect(() => {
+    // Cargar el estado desde localStorage al iniciar
+    const storedCourses = localStorage.getItem('courseStates');
+    if (storedCourses) {
+      setCourses(JSON.parse(storedCourses));
+    }
+
+    const newEnabledCourses = {};
+    courses.forEach(course => {
+      newEnabledCourses[course.id] = isCourseEnabled(course.id);
+    });
+    setEnabledCourses(newEnabledCourses);
+  }, []); // El array de dependencia vacío asegura que esto solo se ejecute una vez al montar el componente
+
+  useEffect(() => {
+    // Recalcular enabledCourses cuando cambian los courses
+    const newEnabledCourses = {};
+    courses.forEach(course => {
+      newEnabledCourses[course.id] = isCourseEnabled(course.id);
+    });
+    setEnabledCourses(newEnabledCourses);
+  }, [courses]);
+
+  const handleStatusChange = (courseId, newStatus) => {
+    setCourses(prevCourses =>
+      prevCourses.map(course =>
+        course.id === courseId ? { ...course, status: newStatus } : course
+      )
+    );
+
+    // Guardar el estado actualizado en localStorage
+    localStorage.setItem('courseStates', JSON.stringify(courses));
+  };
+
+  const coursesByYear = Object.entries(
+    courses.reduce((acc, course) => {
+      if (!acc[course.year]) {
+        acc[course.year] = [];
+      }
+      acc[course.year].push(course);
+      return acc;
+    }, {})
+  )
+  .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
+  .map(([year, courses]) => ({
+    year: parseInt(year),
+    courses
+  }));
+
   return (
-    <div className="App">
-      <h1>Plan de Estudios</h1>
-      {/* Aquí iría la lógica para renderizar la lista de cursos */}
-      {courses.map(course => (
-        <div key={course.id}>
-          <h2>{course.name} ({course.year}º año)</h2>
-          <p>Estado: {course.status}</p>
-          {course.prerequisites.length > 0 && (
-            <div>
-              <p>Prerrequisitos:</p>
-              <ul>
-                {course.prerequisites.map(prerequisite => (
-                  <li key={prerequisite.id}>
-                    {courses.find(c => c.id === prerequisite.id)?.name} ({prerequisite.requirement})
-                  </li>
-                ))}
-              </ul>
+    <div className="min-h-screen bg-gray-100 p-4 font-sans antialiased">
+      <script src="https://cdn.tailwindcss.com"></script>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+      <style>{`body { font-family: 'Inter', sans-serif; }`}</style>
+      <header className="text-center mb-8">
+        <h1 className="text-4xl font-bold text-gray-800 mb-2 rounded-lg p-2 bg-white shadow-md">Régimen de Correlatividades de Carrera</h1>
+        <p className="text-lg text-gray-600">Selecciona el estado de cada materia para ver cómo se habilitan las correlativas.</p>
+      </header>
+      <main className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {coursesByYear.map(yearData => (
+          <section key={yearData.year} className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+            <h2 className="text-2xl font-semibold text-gray-700 mb-4 border-b pb-2">Año {yearData.year}</h2>
+            <div className="space-y-4">
+              {yearData.courses.map(course => (
+                <div
+                  key={course.id}
+                  className={`p-4 rounded-lg shadow-sm transition-all duration-300
+                    ${enabledCourses[course.id] ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200 opacity-70 cursor-not-allowed'}
+                    ${course.status === 'aprobada' ? 'bg-green-100 border-green-300' : ''}
+                    ${course.status === 'regular' ? 'bg-yellow-100 border-yellow-300' : ''}
+                    ${course.status === 'desaprobada' ? 'bg-red-100 border-red-300' : ''}
+                  `}
+                >
+                  <h3 className="text-lg font-medium text-gray-800 mb-2">{course.name}</h3>
+                  <div className="flex items-center space-x-2 text-sm text-gray-600 mb-2">
+                    {course.prerequisites.length > 0 && (<span className="font-semibold">Correlativas: </span>)}
+                    {course.prerequisites.length > 0 ? (
+                      course.prerequisites.map(prerequisite => {
+                        const prereqCourse = courses.find(c => c.id === prerequisite.id);
+                        return (
+                          <span key={prerequisite.id} className="bg-gray-200 px-2 py-1 rounded-full text-xs">
+                            {prereqCourse ? `${prereqCourse.name} (${prerequisite.requirement})` : prerequisite.id}
+                          </span>
+                        );
+                      })
+                    ) : (
+                      <span className="text-gray-500">Ninguna</span>
+                    )}
+                  </div>
+                  <div className="flex items-center space-x-3 mt-3">
+                    <label htmlFor={`status-${course.id}`} className="sr-only">Estado de {course.name}</label>
+                    <select
+                      id={`status-${course.id}`}
+                      className={`block w-full p-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500
+                        ${enabledCourses[course.id] ? 'bg-white border-gray-300 text-gray-900' : 'bg-gray-200 border-gray-300 text-gray-500 cursor-not-allowed'}
+                      `}
+                      value={course.status}
+                      onChange={(e) => handleStatusChange(course.id, e.target.value)}
+                      disabled={!enabledCourses[course.id] && course.status === 'pendiente'}
+                    >
+                      <option value="pendiente" disabled={course.status !== 'pendiente'}>Pendiente</option>
+                      <option value="cursando">Cursando</option>
+                      <option value="regular">Aprobada (Regular)</option>
+                      <option value="aprobada">Aprobada (Directa)</option>
+                      <option value="desaprobada">Desaprobado</option>
+                    </select>
+                  </div>
+                  {!enabledCourses[course.id] && course.status === 'pendiente' && (
+                    <p className="text-red-600 text-sm mt-2">
+                      Habilita las correlativas para cursar esta materia.
+                    </p>
+                  )}
+                </div>
+              ))}
             </div>
-          )}
-          <button onClick={() => console.log(`Marcar ${course.name} como completada`)}>
-            Marcar como Completada
-          </button>
-        </div>
-      ))}
+          </section>
+        ))}
+      </main>
+      <footer className="text-center mt-12 p-4 text-gray-500 text-sm">
+        <p>&copy; 2025 Aplicación de Correlatividades. Desarrollado con React y Tailwind CSS.</p>
+      </footer>
     </div>
   );
 }
+
+export default App;
+```
