@@ -62,59 +62,77 @@ const groupedCourses = careerCourses.reduce((acc, course) => {
 const STORAGE_KEY = 'careerCoursesStatus';
 
 function App() {
-  const [courses, setCourses] = useState(careerCourses);
+  const [courses, setCourses] = useState(
+    COURSES.map((course) => ({
+      ...course,
+      status: "no-cursada",
+    }))
+  );
 
-  const handleStatusChange = (courseId, newStatus) => {
-    setCourses(prevCourses =>
-      prevCourses.map(course =>
-        course.id === courseId ? { ...course, status: newStatus } : course
+  const handleStatusChange = (code, newStatus) => {
+    setCourses((prevCourses) =>
+      prevCourses.map((course) =>
+        course.code === code ? { ...course, status: newStatus } : course
       )
     );
   };
 
-  const checkPrerequisites = (course) => {
-    return course.prerequisites.every(prereq => {
-      const prereqCourse = courses.find(c => c.id === prereq.id);
-      if (!prereqCourse) return false;
-      return prereq.requirement === 'Cursada'
-        ? prereqCourse.status === 'cursada' || prereqCourse.status === 'aprobada'
-        : prereqCourse.status === 'aprobada';
+  const getCorrelativityInfo = (course) => {
+    const isEligibleToEnroll = course.correlativasCursada.every((code) => {
+      const found = courses.find((c) => c.code === code);
+      return found?.status === "cursada" || found?.status === "aprobada";
     });
+
+    const isEligibleToPass = course.correlativasAprobacion.every((code) => {
+      const found = courses.find((c) => c.code === code);
+      return found?.status === "aprobada";
+    });
+
+    return { isEligibleToEnroll, isEligibleToPass };
   };
 
-  const renderCourse = (course) => {
-    const prerequisitesMet = checkPrerequisites(course);
-
-    return (
-      <div key={course.id} className={`p-4 rounded-lg shadow-md ${prerequisitesMet ? 'bg-white' : 'bg-gray-100 text-gray-400'} border border-gray-300`}>
-        <h2 className="text-lg font-semibold">{course.name}</h2>
-        <p className="text-sm mb-2">Año: {course.year}</p>
-        <div className="flex space-x-2">
-          {['pending', 'cursada', 'aprobada'].map(status => (
-            <button
-              key={status}
-              className={`px-2 py-1 text-sm rounded ${course.status === status ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-              onClick={() => handleStatusChange(course.id, status)}
-              disabled={!prerequisitesMet && status !== 'pending'}
-            >
-              {status}
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  };
+  const years = [...new Set(courses.map((course) => course.year))];
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Materias de Ingeniería Industrial - UTN</h1>
-      {[1, 2, 3, 4, 5].map(year => (
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-4">Materias de Ingeniería Industrial (UTN)</h1>
+      {years.map((year) => (
         <div key={year} className="mb-6">
-          <h2 className="text-xl font-bold mb-2">Año {year}</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <h2 className="text-xl font-semibold mb-2">{year}° Año</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {courses
-              .filter(course => course.year === year)
-              .map(course => renderCourse(course))}
+              .filter((course) => course.year === year)
+              .map((course) => {
+                const { isEligibleToEnroll, isEligibleToPass } = getCorrelativityInfo(course);
+
+                return (
+                  <Card key={course.code}>
+                    <CardContent className="p-4">
+                      <h3 className="text-lg font-semibold">{course.name}</h3>
+                      <p className="text-sm text-gray-500">{course.code}</p>
+                      <div className="mt-2">
+                        <Select
+                          value={course.status}
+                          onValueChange={(value) => handleStatusChange(course.code, value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="no-cursada">No cursada</SelectItem>
+                            <SelectItem value="cursada" disabled={!isEligibleToEnroll}>
+                              Cursada
+                            </SelectItem>
+                            <SelectItem value="aprobada" disabled={!isEligibleToPass}>
+                              Aprobada
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
           </div>
         </div>
       ))}
