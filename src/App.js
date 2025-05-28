@@ -51,85 +51,73 @@ const careerCourses = [
   { id: 'proy_fin', name: 'Proyecto Final', year: 5, prerequisites: [{ id: 'seg_hig', requirement: 'Cursada' }, { id: 'inv_op', requirement: 'Cursada' }, { id: 'proc_ind', requirement: 'Cursada' }, { id: 'eval_proy', requirement: 'Cursada' }, { id: 'plan_cont_prod', requirement: 'Cursada' }, { id: 'dis_prod', requirement: 'Cursada' }, { id: 'ing2', requirement: 'Cursada' }, { id: 'inst_ind', requirement: 'Cursada' }, { id: 'mant', requirement: 'Cursada' }, { id: 'man_mat', requirement: 'Cursada' }, { id: 'com_ext', requirement: 'Cursada' }, { id: 'relac_ind', requirement: 'Cursada' }, { id: 'ing_cal', requirement: 'Cursada' }, { id: 'cont_gest', requirement: 'Cursada' }, { id: 'am2', requirement: 'Cursada' }, { id: 'est_trab', requirement: 'Cursada' }, { id: 'termo', requirement: 'Cursada' }, { id: 'electrotec', requirement: 'Cursada' }, { id: 'an_num', requirement: 'Cursada' }, { id: 'est_res', requirement: 'Cursada' }, { id: 'mec_flu', requirement: 'Cursada' }, { id: 'mec_mec', requirement: 'Cursada'}], status: 'pending' },
  
   ];
+const groupedCourses = careerCourses.reduce((acc, course) => {
+  if (!acc[course.year]) {
+    acc[course.year] = [];
+  }
+  acc[course.year].push(course);
+  return acc;
+}, {});
 
 const STORAGE_KEY = 'careerCoursesStatus';
 
 function App() {
-  const [courses, setCourses] = useState([]);
-  const [filter, setFilter] = useState('all');
+  const [courses, setCourses] = useState(careerCourses);
 
-  // Carga inicial desde localStorage o datos por defecto
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      setCourses(JSON.parse(stored));
-    } else {
-      setCourses(careerCourses);
-    }
-  }, []);
-
-  // Guardar cambios en localStorage cuando cambian los cursos
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
-  }, [courses]);
-
-  // Función para cambiar el estado de un curso (ej: pendiente -> cursada -> aprobada -> pendiente)
-  const toggleStatus = (id) => {
+  const handleStatusChange = (courseId, newStatus) => {
     setCourses(prevCourses =>
-      prevCourses.map(course => {
-        if (course.id === id) {
-          let newStatus;
-          switch (course.status) {
-            case 'pending':
-              newStatus = 'cursada';
-              break;
-            case 'cursada':
-              newStatus = 'aprobada';
-              break;
-            case 'aprobada':
-            default:
-              newStatus = 'pending';
-              break;
-          }
-          return { ...course, status: newStatus };
-        }
-        return course;
-      })
+      prevCourses.map(course =>
+        course.id === courseId ? { ...course, status: newStatus } : course
+      )
     );
   };
 
-  // Filtrar cursos según el filtro seleccionado
-  const filteredCourses = courses.filter(course => {
-    if (filter === 'all') return true;
-    return course.status === filter;
-  });
+  const checkPrerequisites = (course) => {
+    return course.prerequisites.every(prereq => {
+      const prereqCourse = courses.find(c => c.id === prereq.id);
+      if (!prereqCourse) return false;
+      return prereq.requirement === 'Cursada'
+        ? prereqCourse.status === 'cursada' || prereqCourse.status === 'aprobada'
+        : prereqCourse.status === 'aprobada';
+    });
+  };
+
+  const renderCourse = (course) => {
+    const prerequisitesMet = checkPrerequisites(course);
+
+    return (
+      <div key={course.id} className={`p-4 rounded-lg shadow-md ${prerequisitesMet ? 'bg-white' : 'bg-gray-100 text-gray-400'} border border-gray-300`}>
+        <h2 className="text-lg font-semibold">{course.name}</h2>
+        <p className="text-sm mb-2">Año: {course.year}</p>
+        <div className="flex space-x-2">
+          {['pending', 'cursada', 'aprobada'].map(status => (
+            <button
+              key={status}
+              className={`px-2 py-1 text-sm rounded ${course.status === status ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+              onClick={() => handleStatusChange(course.id, status)}
+              disabled={!prerequisitesMet && status !== 'pending'}
+            >
+              {status}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   return (
-    <div className="app-container">
-      <h1>Cursos Ingeniería Industrial - UTN</h1>
-
-      {/* Selector de filtro */}
-      <div className="filter-buttons">
-        <button onClick={() => setFilter('all')} className={filter === 'all' ? 'active' : ''}>Todos</button>
-        <button onClick={() => setFilter('pending')} className={filter === 'pending' ? 'active' : ''}>Pendientes</button>
-        <button onClick={() => setFilter('cursada')} className={filter === 'cursada' ? 'active' : ''}>Cursando</button>
-        <button onClick={() => setFilter('aprobada')} className={filter === 'aprobada' ? 'active' : ''}>Aprobados</button>
-      </div>
-
-      {/* Listado de cursos filtrados */}
-      <ul className="course-list">
-        {filteredCourses.map(course => (
-          <li key={course.id} className={`course-item ${course.status}`}>
-            <div>
-              <strong>{course.name}</strong> (Año {course.year})
-            </div>
-            <div>
-              Estado: <span>{course.status}</span>
-              <button onClick={() => toggleStatus(course.id)}>Cambiar estado</button>
-            </div>
-          </li>
-        ))}
-      </ul>
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Materias de Ingeniería Industrial - UTN</h1>
+      {[1, 2, 3, 4, 5].map(year => (
+        <div key={year} className="mb-6">
+          <h2 className="text-xl font-bold mb-2">Año {year}</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {courses
+              .filter(course => course.year === year)
+              .map(course => renderCourse(course))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
