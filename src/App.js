@@ -52,12 +52,11 @@ const careerCourses = [
  
   ];
 
-const STORAGE_KEY = 'careerCoursesStatus';  // define la clave para localStorage
-const initialCourses = careerCourses;       // los datos originales
+const STORAGE_KEY = 'careerCoursesStatus';
 
 function App() {
   const [courses, setCourses] = useState([]);
-  const [filter, setFilter] = useState('all'); // 'all', 'pending', 'cursada', 'aprobada'
+  const [filter, setFilter] = useState('all');
 
   // Carga inicial desde localStorage o datos por defecto
   useEffect(() => {
@@ -65,56 +64,69 @@ function App() {
     if (stored) {
       setCourses(JSON.parse(stored));
     } else {
-      setCourses(initialCourses);
+      setCourses(careerCourses);
     }
   }, []);
 
-  // Guarda en localStorage cada vez que cambian las materias
+  // Guardar cambios en localStorage cuando cambian los cursos
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
   }, [courses]);
 
-  // Cambiar estado de una materia
-  const handleStatusChange = (courseId, newStatus) => {
+  // Función para cambiar el estado de un curso (ej: pendiente -> cursada -> aprobada -> pendiente)
+  const toggleStatus = (id) => {
     setCourses(prevCourses =>
-      prevCourses.map(course =>
-        course.id === courseId ? { ...course, status: newStatus } : course
-      )
+      prevCourses.map(course => {
+        if (course.id === id) {
+          let newStatus;
+          switch (course.status) {
+            case 'pending':
+              newStatus = 'cursada';
+              break;
+            case 'cursada':
+              newStatus = 'aprobada';
+              break;
+            case 'aprobada':
+            default:
+              newStatus = 'pending';
+              break;
+          }
+          return { ...course, status: newStatus };
+        }
+        return course;
+      })
     );
   };
 
-  // Filtrar las materias según el filtro seleccionado
+  // Filtrar cursos según el filtro seleccionado
   const filteredCourses = courses.filter(course => {
     if (filter === 'all') return true;
     return course.status === filter;
   });
 
   return (
-    <div>
-      <h1>Carreras UTN - Ingeniería Industrial</h1>
+    <div className="app-container">
+      <h1>Cursos Ingeniería Industrial - UTN</h1>
 
-      <div>
-        <label>Filtrar materias: </label>
-        <select onChange={(e) => setFilter(e.target.value)} value={filter}>
-          <option value="all">Todas</option>
-          <option value="pending">Pendientes</option>
-          <option value="cursada">Cursadas</option>
-          <option value="aprobada">Aprobadas</option>
-        </select>
+      {/* Selector de filtro */}
+      <div className="filter-buttons">
+        <button onClick={() => setFilter('all')} className={filter === 'all' ? 'active' : ''}>Todos</button>
+        <button onClick={() => setFilter('pending')} className={filter === 'pending' ? 'active' : ''}>Pendientes</button>
+        <button onClick={() => setFilter('cursada')} className={filter === 'cursada' ? 'active' : ''}>Cursando</button>
+        <button onClick={() => setFilter('aprobada')} className={filter === 'aprobada' ? 'active' : ''}>Aprobados</button>
       </div>
 
-      <ul>
+      {/* Listado de cursos filtrados */}
+      <ul className="course-list">
         {filteredCourses.map(course => (
-          <li key={course.id}>
-            <strong>{course.name}</strong> (Año {course.year}) - Estado: {course.status}
-            <select
-              value={course.status}
-              onChange={(e) => handleStatusChange(course.id, e.target.value)}
-            >
-              <option value="pending">Pendiente</option>
-              <option value="cursada">Cursada</option>
-              <option value="aprobada">Aprobada</option>
-            </select>
+          <li key={course.id} className={`course-item ${course.status}`}>
+            <div>
+              <strong>{course.name}</strong> (Año {course.year})
+            </div>
+            <div>
+              Estado: <span>{course.status}</span>
+              <button onClick={() => toggleStatus(course.id)}>Cambiar estado</button>
+            </div>
           </li>
         ))}
       </ul>
