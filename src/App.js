@@ -62,78 +62,44 @@ const groupedCourses = careerCourses.reduce((acc, course) => {
 const STORAGE_KEY = 'careerCoursesStatus';
 
 function App() {
-  const [courses, setCourses] = useState(
-    COURSES.map((course) => ({
-      ...course,
-      status: "no-cursada",
-    }))
-  );
+  const [courses, setCourses] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) return JSON.parse(saved);
+    return careerCourses.map(course => ({ ...course, status: 'no-cursada' }));
+  });
 
-  const handleStatusChange = (code, newStatus) => {
-    setCourses((prevCourses) =>
-      prevCourses.map((course) =>
-        course.code === code ? { ...course, status: newStatus } : course
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
+  }, [courses]);
+
+  const handleStatusChange = (id, newStatus) => {
+    setCourses(prev =>
+      prev.map(course =>
+        course.id === id ? { ...course, status: newStatus } : course
       )
     );
   };
-
-  const getCorrelativityInfo = (course) => {
-    const isEligibleToEnroll = course.correlativasCursada.every((code) => {
-      const found = courses.find((c) => c.code === code);
-      return found?.status === "cursada" || found?.status === "aprobada";
-    });
-
-    const isEligibleToPass = course.correlativasAprobacion.every((code) => {
-      const found = courses.find((c) => c.code === code);
-      return found?.status === "aprobada";
-    });
-
-    return { isEligibleToEnroll, isEligibleToPass };
-  };
-
-  const years = [...new Set(courses.map((course) => course.year))];
-
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Materias de Ingeniería Industrial (UTN)</h1>
-      {years.map((year) => (
-        <div key={year} className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">{year}° Año</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {courses
-              .filter((course) => course.year === year)
-              .map((course) => {
-                const { isEligibleToEnroll, isEligibleToPass } = getCorrelativityInfo(course);
-
-                return (
-                  <Card key={course.code}>
-                    <CardContent className="p-4">
-                      <h3 className="text-lg font-semibold">{course.name}</h3>
-                      <p className="text-sm text-gray-500">{course.code}</p>
-                      <div className="mt-2">
-                        <Select
-                          value={course.status}
-                          onValueChange={(value) => handleStatusChange(course.code, value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="no-cursada">No cursada</SelectItem>
-                            <SelectItem value="cursada" disabled={!isEligibleToEnroll}>
-                              Cursada
-                            </SelectItem>
-                            <SelectItem value="aprobada" disabled={!isEligibleToPass}>
-                              Aprobada
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-          </div>
+    <div className="app-container">
+      {Object.keys(groupedCourses).map(year => (
+        <div key={year} className="year-section">
+          <h2>Año {year}</h2>
+          {groupedCourses[year].map(course => {
+            const currentCourse = courses.find(c => c.id === course.id) || course;
+            return (
+              <div key={course.id} className="course-item">
+                <span>{course.name}</span>
+                <select
+                  value={currentCourse.status}
+                  onChange={e => handleStatusChange(course.id, e.target.value)}
+                >
+                  <option value="no-cursada">No cursada</option>
+                  <option value="cursada">Cursada</option>
+                  <option value="aprobada">Aprobada</option>
+                </select>
+              </div>
+            );
+          })}
         </div>
       ))}
     </div>
