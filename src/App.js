@@ -54,8 +54,9 @@ const careerCourses = [
 
 function App() {
   const [courses, setCourses] = useState([]);
-  const [filter, setFilter] = useState('all'); // all, pending, cursada, aprobada
+  const [filter, setFilter] = useState('all'); // 'all', 'pending', 'cursada', 'aprobada'
 
+  // Carga inicial desde localStorage o datos por defecto
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
@@ -65,6 +66,7 @@ function App() {
     }
   }, []);
 
+  // Guarda en localStorage cada vez que cambian las materias
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
   }, [courses]);
@@ -78,55 +80,38 @@ function App() {
     );
   };
 
-  // Filtrar materias según estado
+  // Filtrar las materias según el filtro seleccionado
   const filteredCourses = courses.filter(course => {
     if (filter === 'all') return true;
     return course.status === filter;
   });
 
   return (
-    <div className="App">
-      <h1>Materias Ingeniería Industrial - UTN</h1>
+    <div>
+      <h1>Carreras UTN - Ingeniería Industrial</h1>
 
       <div>
-        <label>Filtrar por estado: </label>
-        <select value={filter} onChange={e => setFilter(e.target.value)}>
+        <label>Filtrar materias: </label>
+        <select onChange={(e) => setFilter(e.target.value)} value={filter}>
           <option value="all">Todas</option>
           <option value="pending">Pendientes</option>
-          <option value="cursada">Cursando</option>
+          <option value="cursada">Cursadas</option>
           <option value="aprobada">Aprobadas</option>
         </select>
       </div>
 
       <ul>
         {filteredCourses.map(course => (
-          <li key={course.id} style={{ margin: '10px 0' }}>
-            <strong>{course.name}</strong> (Año {course.year}) - Estado:
+          <li key={course.id}>
+            <strong>{course.name}</strong> (Año {course.year}) - Estado: {course.status}
             <select
               value={course.status}
-              onChange={e => handleStatusChange(course.id, e.target.value)}
-              style={{ marginLeft: 8 }}
+              onChange={(e) => handleStatusChange(course.id, e.target.value)}
             >
               <option value="pending">Pendiente</option>
-              <option value="cursada">Cursando</option>
+              <option value="cursada">Cursada</option>
               <option value="aprobada">Aprobada</option>
             </select>
-
-            {course.prerequisites.length > 0 && (
-              <div style={{ marginTop: 4, fontSize: '0.9em', color: '#555' }}>
-                Correlativas:
-                <ul>
-                  {course.prerequisites.map(pr => {
-                    const prereqCourse = courses.find(c => c.id === pr.id);
-                    return (
-                      <li key={pr.id}>
-                        {prereqCourse ? prereqCourse.name : pr.id} - Requisito: {pr.requirement}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            )}
           </li>
         ))}
       </ul>
