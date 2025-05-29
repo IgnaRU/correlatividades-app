@@ -62,80 +62,68 @@ const groupedCourses = careerCourses.reduce((acc, course) => {
 const STORAGE_KEY = 'careerCoursesStatus';
 
 function App() {
-  const [courses, setCourses] = useState(
-    COURSES.map((course) => ({
-      ...course,
-      status: "no-cursada",
-    }))
-  );
+  const [courses, setCourses] = useState([]);
+  const [filter, setFilter] = useState('all'); // 'all', 'pending', 'cursada', 'aprobada'
 
-  const handleStatusChange = (code, newStatus) => {
-    setCourses((prevCourses) =>
-      prevCourses.map((course) =>
-        course.code === code ? { ...course, status: newStatus } : course
+  // Carga inicial desde localStorage o datos por defecto
+  useEffect(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      setCourses(JSON.parse(stored));
+    } else {
+      setCourses(initialCourses);
+    }
+  }, []);
+
+  // Guarda en localStorage cada vez que cambian las materias
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
+  }, [courses]);
+
+  // Cambiar estado de una materia
+  const handleStatusChange = (courseId, newStatus) => {
+    setCourses(prevCourses =>
+      prevCourses.map(course =>
+        course.id === courseId ? { ...course, status: newStatus } : course
       )
     );
   };
 
-  const getCorrelativityInfo = (course) => {
-    const isEligibleToEnroll = course.correlativasCursada.every((code) => {
-      const found = courses.find((c) => c.code === code);
-      return found?.status === "cursada" || found?.status === "aprobada";
-    });
-
-    const isEligibleToPass = course.correlativasAprobacion.every((code) => {
-      const found = courses.find((c) => c.code === code);
-      return found?.status === "aprobada";
-    });
-
-    return { isEligibleToEnroll, isEligibleToPass };
-  };
-
-  const years = [...new Set(courses.map((course) => course.year))];
+  // Filtrar las materias según el filtro seleccionado
+  const filteredCourses = courses.filter(course => {
+    if (filter === 'all') return true;
+    return course.status === filter;
+  });
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Materias de Ingeniería Industrial (UTN)</h1>
-      {years.map((year) => (
-        <div key={year} className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">{year}° Año</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {courses
-              .filter((course) => course.year === year)
-              .map((course) => {
-                const { isEligibleToEnroll, isEligibleToPass } = getCorrelativityInfo(course);
+    <div>
+      <h1>Carreras UTN - Ingeniería Industrial</h1>
 
-                return (
-                  <Card key={course.code}>
-                    <CardContent className="p-4">
-                      <h3 className="text-lg font-semibold">{course.name}</h3>
-                      <p className="text-sm text-gray-500">{course.code}</p>
-                      <div className="mt-2">
-                        <Select
-                          value={course.status}
-                          onValueChange={(value) => handleStatusChange(course.code, value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="no-cursada">No cursada</SelectItem>
-                            <SelectItem value="cursada" disabled={!isEligibleToEnroll}>
-                              Cursada
-                            </SelectItem>
-                            <SelectItem value="aprobada" disabled={!isEligibleToPass}>
-                              Aprobada
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-          </div>
-        </div>
-      ))}
+      <div>
+        <label>Filtrar materias: </label>
+        <select onChange={(e) => setFilter(e.target.value)} value={filter}>
+          <option value="all">Todas</option>
+          <option value="pending">Pendientes</option>
+          <option value="cursada">Cursadas</option>
+          <option value="aprobada">Aprobadas</option>
+        </select>
+      </div>
+
+      <ul>
+        {filteredCourses.map(course => (
+          <li key={course.id}>
+            <strong>{course.name}</strong> (Año {course.year}) - Estado: {course.status}
+            <select
+              value={course.status}
+              onChange={(e) => handleStatusChange(course.id, e.target.value)}
+            >
+              <option value="pending">Pendiente</option>
+              <option value="cursada">Cursada</option>
+              <option value="aprobada">Aprobada</option>
+            </select>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
