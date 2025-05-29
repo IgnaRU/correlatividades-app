@@ -51,21 +51,11 @@ const careerCourses = [
   { id: 'proy_fin', name: 'Proyecto Final', year: 5, prerequisites: [{ id: 'seg_hig', requirement: 'Cursada' }, { id: 'inv_op', requirement: 'Cursada' }, { id: 'proc_ind', requirement: 'Cursada' }, { id: 'eval_proy', requirement: 'Cursada' }, { id: 'plan_cont_prod', requirement: 'Cursada' }, { id: 'dis_prod', requirement: 'Cursada' }, { id: 'ing2', requirement: 'Cursada' }, { id: 'inst_ind', requirement: 'Cursada' }, { id: 'mant', requirement: 'Cursada' }, { id: 'man_mat', requirement: 'Cursada' }, { id: 'com_ext', requirement: 'Cursada' }, { id: 'relac_ind', requirement: 'Cursada' }, { id: 'ing_cal', requirement: 'Cursada' }, { id: 'cont_gest', requirement: 'Cursada' }, { id: 'am2', requirement: 'Cursada' }, { id: 'est_trab', requirement: 'Cursada' }, { id: 'termo', requirement: 'Cursada' }, { id: 'electrotec', requirement: 'Cursada' }, { id: 'an_num', requirement: 'Cursada' }, { id: 'est_res', requirement: 'Cursada' }, { id: 'mec_flu', requirement: 'Cursada' }, { id: 'mec_mec', requirement: 'Cursada'}], status: 'pending' },
  
   ];
-const groupedCourses = careerCourses.reduce((acc, course) => {
-  if (!acc[course.year]) {
-    acc[course.year] = [];
-  }
-  acc[course.year].push(course);
-  return acc;
-}, {});
-
-const STORAGE_KEY = 'careerCoursesStatus';
 
 function App() {
   const [courses, setCourses] = useState([]);
-  const [filter, setFilter] = useState('all'); // 'all', 'pending', 'cursada', 'aprobada'
+  const [filter, setFilter] = useState('all'); // all, pending, cursada, aprobada
 
-  // Carga inicial desde localStorage o datos por defecto
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
@@ -75,7 +65,6 @@ function App() {
     }
   }, []);
 
-  // Guarda en localStorage cada vez que cambian las materias
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(courses));
   }, [courses]);
@@ -89,38 +78,55 @@ function App() {
     );
   };
 
-  // Filtrar las materias según el filtro seleccionado
+  // Filtrar materias según estado
   const filteredCourses = courses.filter(course => {
     if (filter === 'all') return true;
     return course.status === filter;
   });
 
   return (
-    <div>
-      <h1>Carreras UTN - Ingeniería Industrial</h1>
+    <div className="App">
+      <h1>Materias Ingeniería Industrial - UTN</h1>
 
       <div>
-        <label>Filtrar materias: </label>
-        <select onChange={(e) => setFilter(e.target.value)} value={filter}>
+        <label>Filtrar por estado: </label>
+        <select value={filter} onChange={e => setFilter(e.target.value)}>
           <option value="all">Todas</option>
           <option value="pending">Pendientes</option>
-          <option value="cursada">Cursadas</option>
+          <option value="cursada">Cursando</option>
           <option value="aprobada">Aprobadas</option>
         </select>
       </div>
 
       <ul>
         {filteredCourses.map(course => (
-          <li key={course.id}>
-            <strong>{course.name}</strong> (Año {course.year}) - Estado: {course.status}
+          <li key={course.id} style={{ margin: '10px 0' }}>
+            <strong>{course.name}</strong> (Año {course.year}) - Estado:
             <select
               value={course.status}
-              onChange={(e) => handleStatusChange(course.id, e.target.value)}
+              onChange={e => handleStatusChange(course.id, e.target.value)}
+              style={{ marginLeft: 8 }}
             >
               <option value="pending">Pendiente</option>
-              <option value="cursada">Cursada</option>
+              <option value="cursada">Cursando</option>
               <option value="aprobada">Aprobada</option>
             </select>
+
+            {course.prerequisites.length > 0 && (
+              <div style={{ marginTop: 4, fontSize: '0.9em', color: '#555' }}>
+                Correlativas:
+                <ul>
+                  {course.prerequisites.map(pr => {
+                    const prereqCourse = courses.find(c => c.id === pr.id);
+                    return (
+                      <li key={pr.id}>
+                        {prereqCourse ? prereqCourse.name : pr.id} - Requisito: {pr.requirement}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
           </li>
         ))}
       </ul>
